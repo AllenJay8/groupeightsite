@@ -75,14 +75,15 @@ WSGI_APPLICATION = 'groupeightsite.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'ENGINE': 'django.db.backends.mysql',
-        'HOST': 'Localhost',
-        'NAME': 'groupeight.db',
-        'PORT': '3306',
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'groupeight',       
         'USER': 'root',
-        'PASSWORD': '',
+        'PASSWORD': '',             
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
     }
-
+}
 
 
 # Password validation
