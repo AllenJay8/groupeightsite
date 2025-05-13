@@ -21,3 +21,4 @@ urlpatterns = [
     path('', include('crud.urls')),
     path('admin/', admin.site.urls),
 ]
+ 
