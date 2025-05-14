@@ -1,14 +1,19 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.contrib import messages
+from .models import Genders
 
-# Create your views here.
+#Create your views here.
 
-def index(request):
-    return HttpResponse("Hello World!")
+def add_gender(request):
+    try: 
+        if request.method == 'POST':
+         gender = request.POSTg.get('gender')
 
-def test(request):
-<<<<<<< HEAD
-    return render(request, 'layout/base.html')
-=======
-    return render(request, 'layout/base.html')
->>>>>>> 8f24be39ea1f42ea68e5f527b7a8c06011a7ba3a
+         Genders.objects.create(gender=gender).save()
+         messages.success(request, 'Gender added succesfully!')
+         return HttpResponse('Gender added successfully!')
+        else:
+            return render(request, 'gender/Addgender.html')
+    except Exception as e:
+        return HttpResponse(f'Error occured during add gender: {e}')

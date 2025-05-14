@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'crud.apps.CrudConfig'
+    'crud.apps.CrudConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'groupeightsite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'groupeight',       
+        'NAME': 'groupeightsite_db',       
         'USER': 'root',
         'PASSWORD': '',             
         'HOST': '127.0.0.1',
