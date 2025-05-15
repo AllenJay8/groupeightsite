@@ -12,23 +12,16 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-!dbok9k9g!k-uwqhit6hpy_4jt8xegou4rjom$%lyj*ml5nm1b'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
 
 INSTALLED_APPS = [
     'crud.apps.CrudConfig',
@@ -55,7 +48,7 @@ ROOT_URLCONF = 'groupeightsite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'crud' / 'templates'],  
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,23 +64,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'groupeightsite.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'groupeightsite_db',       
+        'NAME': 'groupeightsite_db',
         'USER': 'root',
-        'PASSWORD': '',             
+        'PASSWORD': '',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -105,24 +91,16 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+STATICFILES_DIRS = [
+    BASE_DIR / 'crud' / 'static',
+]
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
