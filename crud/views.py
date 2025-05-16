@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib import messages
 from .models import Genders
@@ -7,7 +7,13 @@ from .models import Genders
 
 def gender_list(request):
     try:
-        return render(request, 'gender/Genderslist.html')
+        genders = Genders.objects.all() # SELECT * FROM tbl_genders;
+
+        data = {
+            'genders':genders
+        }
+
+        return render(request, 'gender/GendersList.html', data)
     except Exception as e:
         return HttpResponse(f'Error occurred during load genders: {e}')
 
@@ -16,9 +22,9 @@ def add_gender(request):
         if request.method == 'POST':
             gender = request.POST.get('gender')
             
-            Genders.objects.create(gender=gender).save()
+            Genders.objects.create(gender=gender).save() # INSERT INTO tbl_genders (gender) VALUES ('gender');
             messages.success(request, 'Gender added successfully!')
-            return render(request, 'gender/AddGender.html')
+            return redirect('/gender/list/')
         else:
             return render(request, 'gender/AddGender.html')
     except Exception as e:
