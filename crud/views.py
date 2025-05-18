@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib import messages
-from .models import Genders
+from .models import Genders, Users
+from django.contrib.auth.hashers import make_password
 
 # Create your views here.
 
@@ -51,7 +52,7 @@ def edit_gender(request, genderId):
             genderObj = Genders.objects.get(pk=genderId) # SELECT * FROM tbl_genders WHERE id = genderId;
 
             data = {
-                'gender':genderObj
+                'gender': genderObj
             }
 
             return render(request, 'gender/EditGender.html', data)
@@ -77,3 +78,57 @@ def delete_gender(request, genderId):
             return render(request, 'gender/DeleteGender.html', data)
     except Exception as e:
         return HttpResponse(f'Error occurred during delete gender: {e}')
+
+def user_list(request):
+    try:
+        userObj = Users.objects.select_related('gender') # SELECT * FROM tbl_users INNER JOIN tbl_genders ON tbl_users.gender_id = tbl_genders.id;
+    
+        data = {
+           'users': userObj,
+         }
+
+        return render(request, 'user/UsersList.html', data)
+    except Exception as e:
+        return HttpResponse(f'Error occurred during load users: {e}')
+
+
+def add_user(request):
+    try:
+        if request.method == 'POST':
+            fullName = request.POST.get('full_name')
+            gender = request.POST.get('gender')
+            birthDate = request.POST.get('birth_date')
+            address = request.POST.get('address')
+            contactNumber = request.POST.get('contact_number')
+            email = request.POST.get('email')
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            confirmPassword = request.POST.get('confirm_password')
+
+           # if password != confirmPassword:
+              #  messages.error(request, 'Password and Confirm Password do not match!') # Error message
+
+            Users.objects.create(
+                full_name=fullName,
+                gender=Genders.objects.get(pk=gender), # SELECT * FROM tbl_genders WHERE id = genderId;
+                birth_date=birthDate,
+                address=address,
+                contact_number=contactNumber,
+                email=email,
+                username=username,
+                password=make_password(password) # Hash before save.
+            ).save() # INSERT INTO tbl_users (fullName, gender, birth_date, address, contact_number, email, username, password)
+                     #VALUES (fullName, gender, birthDate, address, contactNumber, email, username, password);
+
+            messages.success(request, 'User added successfully!')
+            return redirect('/user/add/')
+        else:
+            genderObj = Genders.objects.all() # SELECT * FROM tbl_genders;
+
+            data = {
+                'genders': genderObj
+            }
+
+        return render(request, 'user/AddUser.html', data)
+    except Exception as e:
+        return HttpResponse(f'Error occurred during add user: {e}')
