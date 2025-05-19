@@ -165,7 +165,8 @@ def edit_user(request, userId):
         
         data = {
             'user': user,
-            'genders': genders
+            'genders': genders,
+            'form_data': request.POST
         }
         return render(request, 'user/EditUser.html', data)
     except Exception as e:
