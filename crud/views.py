@@ -3,9 +3,13 @@ from django.http import HttpResponse
 from django.contrib import messages
 from .models import Genders, Users
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
+
 
 # Create your views here.
 
+@login_required
 def gender_list(request):
     try:
         genders = Genders.objects.all() # SELECT * FROM tbl_genders;
@@ -17,7 +21,8 @@ def gender_list(request):
         return render(request, 'gender/GendersList.html', data)
     except Exception as e:
         return HttpResponse(f'Error occurred during load genders: {e}')
-
+    
+@login_required
 def add_gender(request):
     try:
         if request.method == 'POST':
@@ -31,6 +36,7 @@ def add_gender(request):
     except Exception as e:
        return HttpResponse(f'Error occured during add gender: {e}')
 
+@login_required
 def edit_gender(request, genderId):
     try:
         genderObj = Genders.objects.get(pk=genderId)
@@ -51,7 +57,8 @@ def edit_gender(request, genderId):
         
     except Exception as e:
         return HttpResponse(f'Error occurred during edit gender: {e}')
-
+    
+@login_required
 def delete_gender(request, genderId):
     try:
         if request.method == 'POST':
@@ -71,6 +78,7 @@ def delete_gender(request, genderId):
     except Exception as e:
         return HttpResponse(f'Error occurred during delete gender: {e}')
 
+@login_required
 def user_list(request):
     try:
         userObj = Users.objects.select_related('gender') # SELECT * FROM tbl_users INNER JOIN tbl_genders ON tbl_users.gender_id = tbl_genders.id;
@@ -83,6 +91,7 @@ def user_list(request):
     except Exception as e:
         return HttpResponse(f'Error occurred during load users: {e}')
 
+@login_required
 def add_user(request):
     try:
         genderObj = Genders.objects.all()  
@@ -145,6 +154,8 @@ def add_user(request):
     except Exception as e:
         return HttpResponse(f'Error occurred during add user: {e}')
     
+
+@login_required
 def edit_user(request, userId):
     try:
         user = Users.objects.get(pk=userId)
@@ -171,7 +182,7 @@ def edit_user(request, userId):
     except Exception as e:
         return HttpResponse(f'Error occurred during edit user: {e}')
 
-
+@login_required
 def delete_user(request, userId):
     try:
         user = Users.objects.get(pk=userId)
@@ -186,4 +197,15 @@ def delete_user(request, userId):
         return HttpResponse(f'Error occurred during delete user: {e}')
     
 
-    
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('user_list')
+        else:
+            messages.error(request, 'Invalid username or password')
+    return render(request, 'login.html')
+
