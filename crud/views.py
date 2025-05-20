@@ -157,7 +157,6 @@ def edit_user(request, userId):
             user.address = request.POST.get('address')
             user.contact_number = request.POST.get('contact_number')
             user.email = request.POST.get('email')
-            user.username = request.POST.get('username')
 
             user.save()
             messages.success(request, 'User updated successfully!')
