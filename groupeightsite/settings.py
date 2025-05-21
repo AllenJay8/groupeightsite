@@ -24,6 +24,7 @@ ALLOWED_HOSTS = []
 
 
 INSTALLED_APPS = [
+    'widget_tweaks',
     'crud.apps.CrudConfig',
     'django.contrib.admin',
     'django.contrib.auth',

@@ -5,6 +5,7 @@ from .models import Genders, Users
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import check_password
 
 
 # Create your views here.
@@ -209,3 +210,28 @@ def login_view(request):
             messages.error(request, 'Invalid username or password')
     return render(request, 'login.html')
 
+@login_required
+def edit_user_password(request, user_id):
+    try:
+        user = Users.objects.get(pk=user_id)
+        
+        if request.method == 'POST':
+            current = request.POST.get('current_password')
+            new1 = request.POST.get('new_password1')
+            new2 = request.POST.get('new_password2')
+
+            if not check_password(current, user.password):
+                messages.error(request, "Current password is incorrect.")
+            elif new1 != new2:
+                messages.error(request, "New passwords do not match.")
+            elif len(new1) < 6:
+                messages.error(request, "Password must be at least 6 characters.")
+            else:
+                user.set_password(new1)
+                user.save()
+                messages.success(request, "Password updated successfully.")
+                return redirect('user_list')
+
+        return render(request, 'user/ChangePasswordUser.html', {'user': user})
+    except Users.DoesNotExist:
+        return HttpResponse("User not found.")
