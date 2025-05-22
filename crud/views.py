@@ -3,10 +3,10 @@ from django.http import HttpResponse
 from django.contrib import messages
 from .models import Genders, Users
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import check_password
-
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 # Create your views here.
 
@@ -82,15 +82,29 @@ def delete_gender(request, genderId):
 @login_required
 def user_list(request):
     try:
-        userObj = Users.objects.select_related('gender') # SELECT * FROM tbl_users INNER JOIN tbl_genders ON tbl_users.gender_id = tbl_genders.id;
-    
+        query = request.GET.get('q')  
+
+        if query:
+            userObj = Users.objects.select_related('gender').filter(full_name__icontains=query)
+        else:
+            userObj = Users.objects.select_related('gender')  
+
         data = {
-           'users': userObj,
-         }
+            'users': userObj,
+        }
 
         return render(request, 'user/UsersList.html', data)
+
     except Exception as e:
         return HttpResponse(f'Error occurred during load users: {e}')
+    
+@login_required
+def ajax_user_search(request):
+    query = request.GET.get('q', '')
+    userObj = Users.objects.select_related('gender').filter(full_name__icontains=query) if query else Users.objects.select_related('gender')
+
+    html = render_to_string('user/user_rows.html', {'users': userObj})
+    return JsonResponse({'html': html})
 
 @login_required
 def add_user(request):
@@ -124,6 +138,10 @@ def add_user(request):
                 messages.error(request, 'All required fields must be filled.')
             elif password != confirmPassword:
                 messages.error(request, 'Password and Confirm Password do not match!')
+                
+            elif len(confirmPassword) < 3:
+                messages.error(request, "Password must be at least 3 characters.")
+            
             elif Users.objects.filter(username=username).exists():
                  messages.error(request, 'Username already exists!')
                  
@@ -200,15 +218,21 @@ def delete_user(request, userId):
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = request.POST.get('username')  
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('user_list')
-        else:
-            messages.error(request, 'Invalid username or password')
-    return render(request, 'login.html')
+
+        try:
+            user = Users.objects.get(username=username)  
+            if check_password(password, user.password):  
+                request.session['user_id'] = user.user_id  
+                messages.success(request, 'Login successful!')
+                return redirect('/user/list/')  
+            else:
+                messages.error(request, 'Invalid password')  
+        except Users.DoesNotExist:
+            messages.error(request, 'User does not exist') 
+        except Exception as e:
+            messages.error(request, f'Error occurred during login: {e}')
 
 @login_required
 def edit_user_password(request, user_id):
@@ -224,10 +248,10 @@ def edit_user_password(request, user_id):
                 messages.error(request, "Current password is incorrect.")
             elif new1 != new2:
                 messages.error(request, "New passwords do not match.")
-            elif len(new1) < 6:
-                messages.error(request, "Password must be at least 6 characters.")
+            elif len(new1) < 3:
+                messages.error(request, "Password must be at least 3 characters.")
             else:
-                user.set_password(new1)
+                user.password = make_password(new1)
                 user.save()
                 messages.success(request, "Password updated successfully.")
                 return redirect('user_list')
@@ -235,3 +259,6 @@ def edit_user_password(request, user_id):
         return render(request, 'user/ChangePasswordUser.html', {'user': user})
     except Users.DoesNotExist:
         return HttpResponse("User not found.")
+
+
+# add pagnition 10 user every page
