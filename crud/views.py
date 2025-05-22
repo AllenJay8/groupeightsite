@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib import messages
-from .models import Genders, Users
+from .models import Genders
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
 from django.template.loader import render_to_string
+from .models import Users
+from .utils import login_required
 
 # Create your views here.
 
@@ -87,7 +88,7 @@ def user_list(request):
         if query:
             userObj = Users.objects.select_related('gender').filter(full_name__icontains=query)
         else:
-            userObj = Users.objects.select_related('gender')  
+            userObj = Users.objects.select_related('gender').all()
 
         data = {
             'users': userObj,
@@ -233,6 +234,9 @@ def login_view(request):
             messages.error(request, 'User does not exist') 
         except Exception as e:
             messages.error(request, f'Error occurred during login: {e}')
+    
+
+    return render(request, 'login.html')
 
 @login_required
 def edit_user_password(request, user_id):
@@ -260,5 +264,11 @@ def edit_user_password(request, user_id):
     except Users.DoesNotExist:
         return HttpResponse("User not found.")
 
+
+
+
+def logout_view(request):
+    request.session.flush()
+    return redirect('/')
 
 # add pagnition 10 user every page
