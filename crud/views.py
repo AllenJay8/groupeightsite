@@ -4,10 +4,10 @@ from django.contrib import messages
 from .models import Genders
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.hashers import check_password
-from django.http import JsonResponse
-from django.template.loader import render_to_string
 from .models import Users
 from .utils import login_required
+from django.core.paginator import Paginator
+
 
 # Create your views here.
 
@@ -83,29 +83,43 @@ def delete_gender(request, genderId):
 @login_required
 def user_list(request):
     try:
-        query = request.GET.get('q')  
+        query = request.GET.get('q', '')
+        sort = request.GET.get('sort', 'asc')  
+
+        user_queryset = Users.objects.select_related('gender')
 
         if query:
-            userObj = Users.objects.select_related('gender').filter(full_name__icontains=query)
-        else:
-            userObj = Users.objects.select_related('gender').all()
+            user_queryset = user_queryset.filter(full_name__icontains=query)
 
-        data = {
-            'users': userObj,
+    
+        if sort == 'desc':
+            user_queryset = user_queryset.order_by('-full_name')
+        else:
+            user_queryset = user_queryset.order_by('full_name')
+
+        paginator = Paginator(user_queryset, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'users': page_obj,
+            'page_obj': page_obj,
+            'query': query,
+            'sort': sort,
         }
 
-        return render(request, 'user/UsersList.html', data)
+      
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return render(request, 'user/UsersList.html', {
+                **context,
+                'partial': True
+            })
+
+        return render(request, 'user/UsersList.html', context)
 
     except Exception as e:
-        return HttpResponse(f'Error occurred during load users: {e}')
-    
-@login_required
-def ajax_user_search(request):
-    query = request.GET.get('q', '')
-    userObj = Users.objects.select_related('gender').filter(full_name__icontains=query) if query else Users.objects.select_related('gender')
+        return HttpResponse(f'Error occurred: {e}')
 
-    html = render_to_string('user/user_rows.html', {'users': userObj})
-    return JsonResponse({'html': html})
 
 @login_required
 def add_user(request):
@@ -136,15 +150,15 @@ def add_user(request):
 
             
             if not all([fullName, gender, birthDate, address, contactNumber, username, password, confirmPassword]):
-                messages.error(request, 'All required fields must be filled.')
+                messages.warning(request, 'All required fields must be filled.') # !warning yellow sign
             elif password != confirmPassword:
                 messages.error(request, 'Password and Confirm Password do not match!')
                 
             elif len(confirmPassword) < 3:
-                messages.error(request, "Password must be at least 3 characters.")
+                messages.warning(request, "Password must be at least 3 characters.")
             
             elif Users.objects.filter(username=username).exists():
-                 messages.error(request, 'Username already exists!')
+                 messages.warning(request, 'Username already exists!')
                  
             else:
                 Users.objects.create(
@@ -158,7 +172,7 @@ def add_user(request):
                     password=make_password(password)
                 )
                 messages.success(request, 'User added successfully!')
-                return redirect('/user/add/')
+                return redirect('/user/list/')
 
            
             return render(request, 'user/AddUser.html', {
@@ -217,26 +231,6 @@ def delete_user(request, userId):
         return HttpResponse(f'Error occurred during delete user: {e}')
     
 
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')  
-        password = request.POST.get('password')
-
-        try:
-            user = Users.objects.get(username=username)  
-            if check_password(password, user.password):  
-                request.session['user_id'] = user.user_id  
-                messages.success(request, 'Login successful!')
-                return redirect('/user/list/')  
-            else:
-                messages.error(request, 'Invalid password')  
-        except Users.DoesNotExist:
-            messages.error(request, 'User does not exist') 
-        except Exception as e:
-            messages.error(request, f'Error occurred during login: {e}')
-    
-
-    return render(request, 'login.html')
 
 @login_required
 def edit_user_password(request, user_id):
@@ -249,9 +243,9 @@ def edit_user_password(request, user_id):
             new2 = request.POST.get('new_password2')
 
             if not check_password(current, user.password):
-                messages.error(request, "Current password is incorrect.")
+                messages.warning(request, "Current password is incorrect.")
             elif new1 != new2:
-                messages.error(request, "New passwords do not match.")
+                messages.warning(request, "New passwords do not match.")
             elif len(new1) < 3:
                 messages.error(request, "Password must be at least 3 characters.")
             else:
@@ -264,11 +258,30 @@ def edit_user_password(request, user_id):
     except Users.DoesNotExist:
         return HttpResponse("User not found.")
 
+def login_view(request):
+    next_url = request.GET.get('next') or '/user/list/'  
 
+    if request.method == 'POST':
+        username = request.POST.get('username')  
+        password = request.POST.get('password')
+
+        try:
+            user = Users.objects.get(username=username)
+            if check_password(password, user.password):
+                request.session['user_id'] = user.user_id
+                messages.success(request, 'Login successful!')
+                return redirect(next_url)  
+            else:
+                messages.error(request, 'Invalid password')
+        except Users.DoesNotExist:
+            messages.warning(request, 'User does not exist')
+        except Exception as e:
+            messages.error(request, f'Error occurred during login: {e}')
+
+    return render(request, 'login.html')
 
 
 def logout_view(request):
     request.session.flush()
     return redirect('/')
 
-# add pagnition 10 user every page
